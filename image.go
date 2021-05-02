@@ -166,7 +166,7 @@ func Resize(mainImage image.Image, width, height float64) image.Image {
 	// return resize.Resize(uint(width), uint(height), mainImage, resize.Lanczos3)
 	imageWidth := float64(mainImage.Bounds().Dx())
 	imageHeight := float64(mainImage.Bounds().Dy())
-	ratio := math.Max(width/imageWidth, height/imageHeight)
+	ratio := math.Min(width/imageWidth, height/imageHeight)
 	return resize.Resize(uint(imageWidth*ratio), uint(imageHeight*ratio), mainImage, resize.Lanczos3)
 }
 
