@@ -99,7 +99,7 @@ func (mainImage *RawImage) Write(text string, textColor color.Color, fontStyle f
 	canvas.DrawString(text)
 }
 
-func HexToRGBA(hexCode string) (c color.NRGBA, err error) {
+func HexToRGBA(hexCode string) (c color.RGBA, err error) {
 	c.A = 0xff
 
 	if hexCode[0] != '#' {
