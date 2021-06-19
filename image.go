@@ -2,7 +2,6 @@ package llamaimage
 
 import (
 	"bytes"
-	"embed"
 	"errors"
 	"image"
 	"image/color"
@@ -10,9 +9,11 @@ import (
 	_ "image/jpeg"
 	"image/png"
 	"io"
+	"io/fs"
 	"math"
 	"os"
 
+	"github.com/disintegration/imaging"
 	"github.com/nfnt/resize"
 	"golang.org/x/image/font"
 	"golang.org/x/image/math/fixed"
@@ -25,31 +26,25 @@ const (
 	GradientOrientationVertical
 )
 
-type RawImage struct{ *image.RGBA }
-
 var ErrInvalidFormat = errors.New("invalid format")
 
-func New(width, height int) RawImage {
-	generatedImage := image.NewRGBA(image.Rect(0, 0, width, height))
-	return RawImage{generatedImage}
+func NewImage(width, height int) *image.RGBA {
+	return image.NewRGBA(image.Rect(0, 0, width, height))
 }
 
-func (mainImage *RawImage) FillColor(colorCode color.RGBA) {
-	width := mainImage.Rect.Dx()
-	height := mainImage.Rect.Dy()
-
-	for x := 0; x < width; x++ {
-		for y := 0; y < height; y++ {
-			mainImage.SetRGBA(x, y, colorCode)
+func FillColor(img draw.Image, colorData color.RGBA) {
+	for x := 0; x < img.Bounds().Dx(); x++ {
+		for y := 0; y < img.Bounds().Dy(); y++ {
+			img.Set(x, y, colorData)
 		}
 	}
 }
 
-func (mainImage *RawImage) FillGradient(startPoint, endPoint color.RGBA, style GradientOrientation) {
+func FillGradient(img draw.Image, startColor, endColor color.RGBA, orientation GradientOrientation) {
 	var column, row int
-	width, height := mainImage.Rect.Dx(), mainImage.Rect.Dy()
+	width, height := img.Bounds().Dx(), img.Bounds().Dy()
 
-	switch style {
+	switch orientation {
 	case GradientOrientationHorizontal:
 		row = height
 		column = width
@@ -58,8 +53,8 @@ func (mainImage *RawImage) FillGradient(startPoint, endPoint color.RGBA, style G
 		column = height
 	}
 
-	SR, SG, SB, SA := float64(startPoint.R), float64(startPoint.G), float64(startPoint.B), float64(startPoint.A)
-	LR, LG, LB, LA := float64(endPoint.R), float64(endPoint.G), float64(endPoint.B), float64(endPoint.A)
+	SR, SG, SB, SA := float64(startColor.R), float64(startColor.G), float64(startColor.B), float64(startColor.A)
+	LR, LG, LB, LA := float64(endColor.R), float64(endColor.G), float64(endColor.B), float64(endColor.A)
 
 	difference_R := (LR - SR) / float64(column)
 	difference_G := (LG - SG) / float64(column)
@@ -70,11 +65,11 @@ func (mainImage *RawImage) FillGradient(startPoint, endPoint color.RGBA, style G
 
 	for columnP := 0; columnP < column; columnP++ {
 		for rowP := 0; rowP < row; rowP++ {
-			switch style {
+			switch orientation {
 			case GradientOrientationHorizontal:
-				mainImage.SetRGBA(columnP, rowP, color.RGBA{uint8(R), uint8(G), uint8(B), uint8(A)})
+				img.Set(columnP, rowP, color.RGBA{uint8(R), uint8(G), uint8(B), uint8(A)})
 			case GradientOrientationVertical:
-				mainImage.SetRGBA(rowP, columnP, color.RGBA{uint8(R), uint8(G), uint8(B), uint8(A)})
+				img.Set(rowP, columnP, color.RGBA{uint8(R), uint8(G), uint8(B), uint8(A)})
 			}
 		}
 
@@ -85,18 +80,52 @@ func (mainImage *RawImage) FillGradient(startPoint, endPoint color.RGBA, style G
 	}
 }
 
-func (mainImage *RawImage) Paste(overlay image.Image, X, Y int) {
-	draw.Draw(mainImage, overlay.Bounds().Add(image.Point{X, Y}), overlay, image.Point{}, draw.Over)
+func Paste(img draw.Image, overlay image.Image, X, Y int) {
+	draw.Draw(img, overlay.Bounds().Add(image.Point{X, Y}), overlay, image.Point{}, draw.Over)
 }
 
-func (mainImage *RawImage) Write(text string, textColor color.Color, fontStyle font.Face, X, Y int) {
+func Write(img draw.Image, text string, textColor color.Color, fontStyle font.Face, X, Y int) {
 	canvas := &font.Drawer{
-		Dst:  mainImage,
+		Dst:  img,
 		Src:  image.NewUniform(textColor),
 		Face: fontStyle,
 		Dot:  fixed.P(X, Y+fontStyle.Metrics().Ascent.Ceil()),
 	}
 	canvas.DrawString(text)
+}
+
+func Rotate(img image.Image, angle float64) image.Image {
+	return imaging.Rotate(img, angle, color.NRGBA{})
+}
+
+func OpenImage(imageBytes io.Reader) (decodedImage image.Image, err error) {
+	decodedImage, _, err = image.Decode(imageBytes)
+	return
+}
+
+func OpenImageByPath(imagePath string) (decodedImage image.Image, err error) {
+	imageBytes, err := os.Open(imagePath)
+	if err != nil {
+		return
+	}
+	defer imageBytes.Close()
+
+	decodedImage, _, err = image.Decode(imageBytes)
+	return
+}
+
+func OpenImageByBytes(imageBytes []byte) (decodedImage image.Image, err error) {
+	decodedImage, _, err = image.Decode(bytes.NewReader(imageBytes))
+	return
+}
+
+func OpenImageFromEFS(fileStorage fs.FS, path string) (decodedImage image.Image, err error) {
+	imageBytes, err := fileStorage.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	decodedImage, _, err = image.Decode(imageBytes)
+	return
 }
 
 func HexToRGBA(hexCode string) (c color.RGBA, err error) {
@@ -134,40 +163,11 @@ func HexToRGBA(hexCode string) (c color.RGBA, err error) {
 	return
 }
 
-func OpenImage(imageBytes io.Reader) (decodedImage image.Image, err error) {
-	decodedImage, _, err = image.Decode(imageBytes)
-	return
-}
-
-func OpenImageByPath(imagePath string) (decodedImage image.Image, err error) {
-	imageBytes, err := os.Open(imagePath)
-	if err != nil {
-		return
-	}
-	defer imageBytes.Close()
-
-	decodedImage, err = OpenImage(imageBytes)
-	return
-}
-
-func OpenImageByBytes(imageBytes []byte) (image.Image, error) {
-	return OpenImage(bytes.NewReader(imageBytes))
-}
-
-func OpenImageFromEFS(fileStorage embed.FS, path string) (image.Image, error) {
-	imageBytes, err := fileStorage.Open(path)
-	if err != nil {
-		return nil, err
-	}
-	return OpenImage(imageBytes)
-}
-
 func Resize(mainImage image.Image, width, height float64) image.Image {
-	// return resize.Resize(uint(width), uint(height), mainImage, resize.Lanczos3)
 	imageWidth := float64(mainImage.Bounds().Dx())
 	imageHeight := float64(mainImage.Bounds().Dy())
 	ratio := math.Min(width/imageWidth, height/imageHeight)
-	return resize.Resize(uint(imageWidth*ratio), uint(imageHeight*ratio), mainImage, resize.Lanczos3)
+	return resize.Resize(uint(imageWidth*ratio), uint(imageHeight*ratio), mainImage, resize.NearestNeighbor)
 }
 
 func Save(mainImage image.Image, path string) error {
@@ -177,11 +177,9 @@ func Save(mainImage image.Image, path string) error {
 	}
 	defer file.Close()
 
-	err = png.Encode(file, mainImage)
-	if err != nil {
+	if err = png.Encode(file, mainImage); err != nil {
 		return err
 	}
-
 	return nil
 }
 
