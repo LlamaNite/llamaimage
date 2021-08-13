@@ -42,7 +42,7 @@ func (f *LlamaFont) GetTextSize(fontSize float64, text string) (width, height in
 	return
 }
 
-func (f *LlamaFont) FitText(text string, fontSize float64, maxWidth int) (font.Face, int) {
+func (f *LlamaFont) FitTextWidth(text string, fontSize float64, maxWidth int) (font.Face, int) {
 	width := f.GetWidth(fontSize, text)
 	for width >= maxWidth {
 		fontSize--
@@ -50,4 +50,16 @@ func (f *LlamaFont) FitText(text string, fontSize float64, maxWidth int) (font.F
 	}
 
 	return f.NewFace(fontSize), width
+}
+
+func (f *LlamaFont) FitHeight(maxHeight int) (font.Face, int) {
+	fontSize := float64(maxHeight)
+	height := f.GetHeight(fontSize)
+
+	for height >= maxHeight {
+		fontSize--
+		height = f.GetHeight(fontSize)
+	}
+
+	return f.NewFace(fontSize), height
 }

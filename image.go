@@ -13,7 +13,6 @@ import (
 	"math"
 	"os"
 
-	"github.com/disintegration/imaging"
 	"github.com/nfnt/resize"
 	"golang.org/x/image/font"
 	"golang.org/x/image/math/fixed"
@@ -80,6 +79,16 @@ func FillGradient(img draw.Image, startColor, endColor color.RGBA, orientation G
 	}
 }
 
+func MixRGBA(first, second color.RGBA) color.RGBA {
+	Alpha := 1 - (1-second.A)*(1-first.A)
+	return color.RGBA{
+		uint8(math.Round(float64((second.R * second.A / Alpha) + (first.R * first.A * (1 - second.A) / Alpha)))),
+		uint8(math.Round(float64((second.G * second.A / Alpha) + (first.G * first.A * (1 - second.A) / Alpha)))),
+		uint8(math.Round(float64((second.B * second.A / Alpha) + (first.B * first.A * (1 - second.A) / Alpha)))),
+		Alpha,
+	}
+}
+
 func Paste(img draw.Image, overlay image.Image, X, Y int) {
 	draw.Draw(img, overlay.Bounds().Add(image.Point{X, Y}), overlay, image.Point{}, draw.Over)
 }
@@ -92,10 +101,6 @@ func Write(img draw.Image, text string, textColor color.Color, fontStyle font.Fa
 		Dot:  fixed.P(X, Y+fontStyle.Metrics().Ascent.Ceil()),
 	}
 	canvas.DrawString(text)
-}
-
-func Rotate(img image.Image, angle float64) image.Image {
-	return imaging.Rotate(img, angle, color.NRGBA{})
 }
 
 func OpenImage(imageBytes io.Reader) (decodedImage image.Image, err error) {
@@ -124,6 +129,7 @@ func OpenImageFromEFS(fileStorage fs.FS, path string) (decodedImage image.Image,
 	if err != nil {
 		return nil, err
 	}
+	defer imageBytes.Close()
 	decodedImage, _, err = image.Decode(imageBytes)
 	return
 }
