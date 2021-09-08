@@ -25,6 +25,13 @@ const (
 	GradientOrientationVertical
 )
 
+type ResizeMode uint8
+
+const (
+	ResizeFit ResizeMode = iota
+	ResizeFill
+)
+
 var ErrInvalidFormat = errors.New("invalid format")
 
 func NewImage(width, height int) *image.RGBA {
@@ -169,11 +176,24 @@ func HexToRGBA(hexCode string) (c color.RGBA, err error) {
 	return
 }
 
-func Resize(mainImage image.Image, width, height float64) image.Image {
-	imageWidth := float64(mainImage.Bounds().Dx())
-	imageHeight := float64(mainImage.Bounds().Dy())
-	ratio := math.Min(width/imageWidth, height/imageHeight)
-	return resize.Resize(uint(imageWidth*ratio), uint(imageHeight*ratio), mainImage, resize.NearestNeighbor)
+func Resize(mainImage image.Image, width, height float64, mode ResizeMode) image.Image {
+	var X, Y uint
+	switch mode {
+	case ResizeFill:
+		if width > height {
+			X = uint(width)
+		} else {
+			Y = uint(height)
+		}
+	case ResizeFit:
+		imageWidth := float64(mainImage.Bounds().Dx())
+		imageHeight := float64(mainImage.Bounds().Dy())
+		ratio := math.Min(width/imageWidth, height/imageHeight)
+		X, Y = uint(imageWidth*ratio), uint(imageHeight*ratio)
+	default:
+		return mainImage
+	}
+	return resize.Resize(X, Y, mainImage, resize.NearestNeighbor)
 }
 
 func Save(mainImage image.Image, path string) error {
