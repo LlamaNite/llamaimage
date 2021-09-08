@@ -1,4 +1,4 @@
-module llamaimage
+module github.com/LlamaNite/llamaimage
 
 go 1.16
 
