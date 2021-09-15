@@ -180,10 +180,10 @@ func Resize(mainImage image.Image, width, height float64, mode ResizeMode) image
 	var X, Y uint
 	switch mode {
 	case ResizeFill:
-		if width > height {
-			X = uint(width)
-		} else {
+		if mainImage.Bounds().Dx() > mainImage.Bounds().Dy() {
 			Y = uint(height)
+		} else {
+			X = uint(width)
 		}
 	case ResizeFit:
 		imageWidth := float64(mainImage.Bounds().Dx())
