@@ -13,6 +13,8 @@ import (
 	"math"
 	"os"
 
+	_ "golang.org/x/image/webp"
+
 	"github.com/nfnt/resize"
 	"golang.org/x/image/font"
 	"golang.org/x/image/math/fixed"
