@@ -89,12 +89,13 @@ func FillGradient(img draw.Image, startColor, endColor color.RGBA, orientation G
 }
 
 func MixRGBA(first, second color.RGBA) color.RGBA {
-	Alpha := 1 - (1-second.A)*(1-first.A)
+	fA, sA := float64(first.A), float64(second.A)
+
 	return color.RGBA{
-		uint8(math.Round(float64((second.R * second.A / Alpha) + (first.R * first.A * (1 - second.A) / Alpha)))),
-		uint8(math.Round(float64((second.G * second.A / Alpha) + (first.G * first.A * (1 - second.A) / Alpha)))),
-		uint8(math.Round(float64((second.B * second.A / Alpha) + (first.B * first.A * (1 - second.A) / Alpha)))),
-		Alpha,
+		uint8((float64(first.R)*(255-sA) + float64(second.R)*sA) / 255),
+		uint8((float64(first.G)*(255-sA) + float64(second.G)*sA) / 255),
+		uint8((float64(first.B)*(255-sA) + float64(second.B)*sA) / 255),
+		uint8(255 - (255-fA)*(255-sA)),
 	}
 }
 
