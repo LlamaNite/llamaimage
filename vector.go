@@ -15,6 +15,14 @@ func NewVector(width, height int) *Vector {
 	return &Vector{vector.NewRasterizer(width, height)}
 }
 
+func (v *Vector) Width() int {
+	return v.v.Size().X
+}
+
+func (v *Vector) Height() int {
+	return v.v.Size().Y
+}
+
 func (v *Vector) From(x, y int) *Vector {
 	v.v.MoveTo(float32(x), float32(y))
 	return v
