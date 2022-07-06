@@ -34,6 +34,7 @@ func (v *Vector) To(x, y int) *Vector {
 }
 
 func (v *Vector) Draw(on draw.Image, with image.Image, onX, onY int) *Vector {
+	v.v.ClosePath()
 	v.v.Draw(on, v.v.Bounds().Add(image.Pt(onX, onY)), with, image.Point{})
 	v.v.Reset(v.v.Size().X, v.v.Size().Y)
 	return v
