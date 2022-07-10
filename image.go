@@ -40,7 +40,7 @@ func NewImage(width, height int) *image.RGBA {
 	return image.NewRGBA(image.Rect(0, 0, width, height))
 }
 
-func FillColor(img draw.Image, colorData color.RGBA) {
+func FillColor(img draw.Image, colorData color.Color) {
 	for x := 0; x < img.Bounds().Dx(); x++ {
 		for y := 0; y < img.Bounds().Dy(); y++ {
 			img.Set(x, y, colorData)
@@ -88,17 +88,6 @@ func FillGradient(img draw.Image, startColor, endColor color.RGBA, orientation G
 	}
 }
 
-func MixRGBA(first, second color.RGBA) color.RGBA {
-	fA, sA := float64(first.A), float64(second.A)
-
-	return color.RGBA{
-		uint8((float64(first.R)*(255-sA) + float64(second.R)*sA) / 255),
-		uint8((float64(first.G)*(255-sA) + float64(second.G)*sA) / 255),
-		uint8((float64(first.B)*(255-sA) + float64(second.B)*sA) / 255),
-		uint8(255 - (255-fA)*(255-sA)),
-	}
-}
-
 func Paste(img draw.Image, overlay image.Image, X, Y int) {
 	draw.Draw(img, overlay.Bounds().Add(image.Point{X, Y}), overlay, image.Point{}, draw.Over)
 }
@@ -141,41 +130,6 @@ func OpenImageFromEFS(fileStorage fs.FS, path string) (decodedImage image.Image,
 	}
 	defer imageBytes.Close()
 	decodedImage, _, err = image.Decode(imageBytes)
-	return
-}
-
-func HexToRGBA(hexCode string) (c color.RGBA, err error) {
-	c.A = 0xff
-
-	if hexCode[0] != '#' {
-		return c, ErrInvalidFormat
-	}
-
-	hexToByte := func(b byte) byte {
-		switch {
-		case b >= '0' && b <= '9':
-			return b - '0'
-		case b >= 'a' && b <= 'f':
-			return b - 'a' + 10
-		case b >= 'A' && b <= 'F':
-			return b - 'A' + 10
-		}
-		err = ErrInvalidFormat
-		return 0
-	}
-
-	switch len(hexCode) {
-	case 7:
-		c.R = hexToByte(hexCode[1])<<4 + hexToByte(hexCode[2])
-		c.G = hexToByte(hexCode[3])<<4 + hexToByte(hexCode[4])
-		c.B = hexToByte(hexCode[5])<<4 + hexToByte(hexCode[6])
-	case 4:
-		c.R = hexToByte(hexCode[1]) * 17
-		c.G = hexToByte(hexCode[2]) * 17
-		c.B = hexToByte(hexCode[3]) * 17
-	default:
-		err = ErrInvalidFormat
-	}
 	return
 }
 
