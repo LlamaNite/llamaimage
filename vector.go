@@ -33,15 +33,33 @@ func (v *Vector) To(x, y int) *Vector {
 	return v
 }
 
-func (v *Vector) Draw(on draw.Image, with image.Image, onX, onY int) *Vector {
-	v.v.ClosePath()
-	v.v.Draw(on, v.v.Bounds().Add(image.Pt(onX, onY)), with, image.Point{})
+func (v *Vector) Reset() *Vector {
 	v.v.Reset(v.v.Size().X, v.v.Size().Y)
 	return v
 }
 
+func (v *Vector) Draw(on draw.Image, with image.Image, onX, onY int) *Vector {
+	v.v.ClosePath()
+	v.v.Draw(on, v.v.Bounds().Add(image.Pt(onX, onY)), with, image.Point{})
+	return v
+}
+
+func (v *Vector) DrawX(on draw.Image, with image.Image, onX, onY int) *Vector {
+	v.v.ClosePath()
+	v.v.Draw(on, v.v.Bounds().Add(image.Pt(onX, onY)), with, image.Point{})
+	v.Reset()
+	return v
+}
+
 func (v *Vector) DrawOp(on draw.Image, with image.Image, onX, onY int) *Vector {
+	v.v.ClosePath()
 	v.v.DrawOp.Draw(on, v.v.Bounds().Add(image.Pt(onX, onY)), with, image.Point{})
-	v.v.Reset(v.v.Size().X, v.v.Size().Y)
+	return v
+}
+
+func (v *Vector) DrawOpX(on draw.Image, with image.Image, onX, onY int) *Vector {
+	v.v.ClosePath()
+	v.v.DrawOp.Draw(on, v.v.Bounds().Add(image.Pt(onX, onY)), with, image.Point{})
+	v.Reset()
 	return v
 }
