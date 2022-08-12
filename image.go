@@ -40,15 +40,19 @@ func NewImage(width, height int) *image.RGBA {
 	return image.NewRGBA(image.Rect(0, 0, width, height))
 }
 
-func FillColor(img draw.Image, colorData color.Color) {
+func FillColor(img *image.RGBA, colorData color.RGBA) {
 	for x := 0; x < img.Bounds().Dx(); x++ {
 		for y := 0; y < img.Bounds().Dy(); y++ {
-			img.Set(x, y, colorData)
+			newColor := colorData
+			if colorData.A != 255 {
+				newColor = MergeRGBA(img.RGBAAt(x, y), colorData)
+			}
+			img.Set(x, y, newColor)
 		}
 	}
 }
 
-func FillGradient(img draw.Image, startColor, endColor color.RGBA, orientation GradientOrientation) {
+func FillGradient(img *image.RGBA, startColor, endColor color.RGBA, orientation GradientOrientation) {
 	var column, row int
 	width, height := img.Bounds().Dx(), img.Bounds().Dy()
 
@@ -73,11 +77,19 @@ func FillGradient(img draw.Image, startColor, endColor color.RGBA, orientation G
 
 	for columnP := 0; columnP < column; columnP++ {
 		for rowP := 0; rowP < row; rowP++ {
+			newColor := color.RGBA{uint8(R), uint8(G), uint8(B), uint8(A)}
+
 			switch orientation {
 			case GradientOrientationHorizontal:
-				img.Set(columnP, rowP, color.RGBA{uint8(R), uint8(G), uint8(B), uint8(A)})
+				if newColor.A != 255 {
+					newColor = MergeRGBA(img.RGBAAt(columnP, rowP), newColor)
+				}
+				img.Set(columnP, rowP, newColor)
 			case GradientOrientationVertical:
-				img.Set(rowP, columnP, color.RGBA{uint8(R), uint8(G), uint8(B), uint8(A)})
+				if newColor.A != 255 {
+					newColor = MergeRGBA(img.RGBAAt(rowP, columnP), newColor)
+				}
+				img.Set(rowP, columnP, newColor)
 			}
 		}
 
@@ -137,7 +149,7 @@ func Resize(mainImage image.Image, width, height float64, mode ResizeMode) image
 	var X, Y uint
 	switch mode {
 	case ResizeFill:
-		if mainImage.Bounds().Dx() > mainImage.Bounds().Dy() {
+		if width < height {
 			Y = uint(height)
 		} else {
 			X = uint(width)
