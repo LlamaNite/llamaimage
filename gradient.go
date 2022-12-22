@@ -12,7 +12,7 @@ type Point struct{ X, Y float64 }
 
 // Gets distance between to points
 //
-// formulla => (x - C.X) ^ 2 + (y - C.Y) ^ 2 = R^2
+// formula => (x - C.X) ^ 2 + (y - C.Y) ^ 2 = R^2
 // returns => R
 func getDistance(c, p Point) float64 {
 	return math.Sqrt(math.Pow(p.X-c.X, 2) + math.Pow(p.Y-c.Y, 2))
